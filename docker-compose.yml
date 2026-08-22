@@ -3,9 +3,12 @@ services:
     image: postgres:16-alpine
     environment: {POSTGRES_USER: agent, POSTGRES_PASSWORD: agent, POSTGRES_DB: agent_transaction}
     volumes: [postgres:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U agent"], interval: 5s, timeout: 3s, retries: 10}
   gateway:
     build: .
-    environment: {PORT: 3000, DEMO_MODE: "true", APPROVAL_TOKEN: change-this-demo-token, DATA_FILE: /data/transactions.json}
-    volumes: [gateway:/data]
+    environment: {PORT: 3000, DEMO_MODE: "true", APPROVAL_TOKEN: change-this-demo-token, DATABASE_URL: postgres://agent:agent@postgres:5432/agent_transaction, USE_POSTGRES: "true"}
+    command: ["sh", "-c", "node dist/scripts/migrate.js && node dist/src/server.js"]
+    depends_on:
+      postgres: {condition: service_healthy}
     ports: ["3000:3000"]
-volumes: {postgres: {}, gateway: {}}
+volumes: {postgres: {}}

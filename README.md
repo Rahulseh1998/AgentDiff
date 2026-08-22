@@ -4,7 +4,7 @@ Change intelligence and transactional safety for autonomous AWS agents. The gate
 
 ## Architecture
 
-A TypeScript modular monolith exposes HTTP/UI and an MCP stdio server. Core transaction concepts are strongly typed. `TransactionService` owns lifecycle invariants; providers isolate demo and real AWS SDK v3 execution. Demo persistence is an atomic mode-0600 file. A PostgreSQL migration is supplied; wiring its repository for multi-instance production is a known limitation.
+A TypeScript modular monolith exposes HTTP/UI and an MCP stdio server. Core transaction concepts are strongly typed. `TransactionService` owns lifecycle invariants; providers isolate demo and real AWS SDK v3 execution. Persistence supports an atomic mode-0600 file or PostgreSQL with optimistic concurrency and workspace-scoped idempotency.
 
 ## Quickstart and best demo
 
@@ -34,7 +34,7 @@ Set `DEMO_MODE=false`, `AWS_REGION`, and optionally `AWS_ROLE_ARN`. Local develo
 
 ## Database, environment, and deployment
 
-Environment variables are documented in `.env.example`. Run `npm run db:migrate` with `DATABASE_URL` to create the PostgreSQL table and workspace/idempotency constraint. `docker compose up --build` runs a durable single-node demo. Production should terminate TLS at a trusted proxy, inject a random 32+ byte approval token, persist data, disable demo mode, and monitor `/health` and `/metrics`.
+Environment variables are documented in `.env.example`. Run `npm run db:migrate` with `DATABASE_URL`, then set `USE_POSTGRES=true`. `docker compose up --build` migrates PostgreSQL and runs a durable demo. Production should terminate TLS at a trusted proxy, inject a random 32+ byte approval token, disable demo mode, and monitor `/health` and `/metrics`.
 
 ## Security model
 
@@ -47,16 +47,16 @@ Strict Zod validation and operation allow-listing constrain proposals. Approval/
 | UpdateAutoScalingGroup | Yes | Configuration | Fully reversible |
 | UpdateService | Yes | Configuration | Fully reversible |
 | UpdateFunctionConfiguration | Yes | Configuration | Fully reversible |
-| StopInstances | Yes | State, partial | Compensatable; start not exposed |
+| StopInstances | Yes | State, partial | Compensatable; automated rollback unavailable |
 | TerminateInstances | Yes | State | Irreversible |
 | DeleteFunction | Yes | Existence | Irreversible |
-| PutRolePolicy | Yes, wildcard block | Policy | Partial when newly created |
-| AttachRolePolicy | Yes | Partial | Detach not exposed |
+| PutRolePolicy | Yes, wildcard block | Policy | Partially reversible; automated rollback unavailable |
+| AttachRolePolicy | Yes | Partial | Partially reversible; automated rollback unavailable |
 | UpdateAssumeRolePolicy | Yes | Partial | Fully reversible |
-| PutBucketPolicy | Yes | Policy | Fully reversible |
+| PutBucketPolicy | Yes | Policy | Partially reversible; automated rollback unavailable |
 | DeleteBucket | Yes | Existence | Irreversible |
 
-Rollback is offered only for non-irreversible classifications and verifies captured fields. Treat explicitly partial cases conservatively.
+Automated rollback is offered only for `FULLY_REVERSIBLE` operations and verifies captured fields. Partial, compensatable, and irreversible classifications never expose the rollback control.
 
 ## Tests and checks
 
@@ -70,4 +70,4 @@ npm audit --omit=dev
 
 ## Known limitations and next five improvements
 
-There is no multi-user OIDC/RBAC, distributed lock/worker, CloudWatch stabilization gate, or wired Postgres repository. Some provider verification is partial. Priorities by customer value: (1) OIDC and workspace membership, (2) Postgres transactions and advisory locks, (3) complete IAM/EC2 compensators, (4) asynchronous stabilization plus CloudWatch evidence, (5) Resource Explorer dependency discovery.
+There is no multi-user OIDC/RBAC, distributed worker, or CloudWatch stabilization gate. Some provider verification is partial. Priorities by customer value: (1) OIDC and workspace membership, (2) background execution and advisory locks, (3) complete IAM/EC2 compensators, (4) asynchronous stabilization plus CloudWatch evidence, (5) Resource Explorer dependency discovery.
