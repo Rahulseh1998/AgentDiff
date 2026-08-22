@@ -1,0 +1,11 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment: {POSTGRES_USER: agent, POSTGRES_PASSWORD: agent, POSTGRES_DB: agent_transaction}
+    volumes: [postgres:/var/lib/postgresql/data]
+  gateway:
+    build: .
+    environment: {PORT: 3000, DEMO_MODE: "true", APPROVAL_TOKEN: change-this-demo-token, DATA_FILE: /data/transactions.json}
+    volumes: [gateway:/data]
+    ports: ["3000:3000"]
+volumes: {postgres: {}, gateway: {}}
