@@ -1,0 +1,8 @@
+export const operations = ['UpdateAutoScalingGroup','StopInstances','TerminateInstances','UpdateService','UpdateFunctionConfiguration','DeleteFunction','PutRolePolicy','AttachRolePolicy','UpdateAssumeRolePolicy','PutBucketPolicy','DeleteBucket'] as const;
+export type Operation=typeof operations[number];
+export type Status='CREATED'|'PLANNING'|'AWAITING_APPROVAL'|'APPROVED'|'EXECUTING'|'VERIFYING'|'COMMITTED'|'REJECTED'|'BLOCKED'|'FAILED'|'ROLLING_BACK'|'ROLLED_BACK'|'ROLLBACK_FAILED';
+export type Reversibility='FULLY_REVERSIBLE'|'COMPENSATABLE'|'PARTIALLY_REVERSIBLE'|'IRREVERSIBLE';
+export interface AuditEvent {id:string;at:string;type:string;actor:string;message:string}
+export interface Change {field:string;before:unknown;after:unknown;meaning:string}
+export interface Risk {score:number;level:'LOW'|'MEDIUM'|'HIGH'|'CRITICAL';reasons:{points:number;reason:string;evidence:string}[]}
+export interface Transaction {id:string;version:number;workspaceId:string;idempotencyKey:string;agent:string;sessionId:string;intent:string;operation:Operation;resource:string;environment:'development'|'staging'|'production';params:Record<string,unknown>;beforeState:Record<string,unknown>;expectedState:Record<string,unknown>;actualState?:Record<string,unknown>;changes:Change[];dependencies:string[];customerFacing:boolean;risk:Risk;policy:'AUTO_APPROVE'|'REQUIRE_APPROVAL'|'BLOCK';policyReason:string;reversibility:Reversibility;status:Status;approval?:{decision:'APPROVE'|'REJECT';approver:string;comment:string;at:string};verification?:'VERIFIED'|'VERIFICATION_FAILED'|'PARTIALLY_VERIFIED';execution?:{startedAt:string;completedAt?:string;providerRequestId?:string;error?:string};audit:AuditEvent[];createdAt:string;updatedAt:string}

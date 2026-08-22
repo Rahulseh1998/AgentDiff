@@ -1,0 +1,18 @@
+version: 1
+policies:
+  - id: block-iam-wildcard
+    description: Block grants of unrestricted AWS actions or resources.
+    when: iam_wildcard_privilege_expansion
+    decision: BLOCK
+  - id: approve-safe-development
+    description: Automatically approve low-risk, reversible development configuration changes.
+    when: environment == development && risk == LOW && reversibility == FULLY_REVERSIBLE
+    decision: AUTO_APPROVE
+  - id: review-production
+    description: Require a human for every production change.
+    when: environment == production
+    decision: REQUIRE_APPROVAL
+  - id: review-default
+    description: Require review when no narrower rule applies.
+    when: always
+    decision: REQUIRE_APPROVAL
